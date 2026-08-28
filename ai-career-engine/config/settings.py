@@ -6,10 +6,12 @@ from typing import Optional
 class Settings:
     """Centralized deployment settings and API key management for AI Career Engine."""
 
-    # Primary AI / LLM Provider (Default: Gemini API)
+    # Primary AI / LLM Provider Configuration
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini")
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini-2.5-flash")
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-004")
+
 
     # Optional Alternative LLM Provider (OpenAI Fallback)
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
