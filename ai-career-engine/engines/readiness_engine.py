@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Dict, List, Any
+from engines.matching_engine import calculate_effective_experience
 
 
 class ReadinessEngine:
@@ -10,7 +11,7 @@ class ReadinessEngine:
         candidate: Dict[str, Any],
         target_role: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """Calculates readiness score based on skill overlap, project coverage, and experience."""
+        """Calculates readiness score based on skill overlap, project coverage, and effective experience."""
         cand_skills = {
             s.get("normalized_name") or s.get("name", "").strip().lower(): float(s.get("proficiency", 0.0))
             for s in candidate.get("skills", [])
@@ -36,15 +37,19 @@ class ReadinessEngine:
         num_projects = len(candidate.get("projects", []))
         project_score = min(1.0, num_projects * 0.33)
 
-        # Experience score
-        cand_exp = candidate.get("experience_years", 0.0)
+        # Experience score using effective experience (restoring protected career gaps)
+        cand_exp = calculate_effective_experience(
+            candidate.get("experience_years", 0.0),
+            candidate.get("career_gaps", []),
+        )
         target_exp = target_role.get("experience_min", 1.0)
         exp_score = 1.0 if cand_exp >= target_exp else (cand_exp / target_exp if target_exp > 0 else 1.0)
 
-        # Protected career gaps must NEVER reduce readiness
+        # Protected career gaps are restored so they NEVER reduce readiness
         overall_readiness = int(
             round((skill_score * 0.60 + project_score * 0.25 + exp_score * 0.15) * 100)
         )
+
 
         return {
             "readiness_score": overall_readiness,

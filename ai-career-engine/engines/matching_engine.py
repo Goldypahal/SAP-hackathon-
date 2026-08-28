@@ -2,6 +2,15 @@ from __future__ import annotations
 from typing import Dict, List, Any
 
 
+def calculate_effective_experience(experience_years: float, career_gaps: List[Dict[str, Any]]) -> float:
+    """Calculates effective experience by restoring time spent on protected career gaps."""
+    protected_months = sum(
+        g.get("duration_months", 0) for g in (career_gaps or []) if g.get("protected", True)
+    )
+    return round(experience_years + (protected_months / 12.0), 2)
+
+
+
 class MatchingEngine:
     """Deterministic engine to match candidate profile against job opportunities.
     Includes sub-scores (Skill, Experience, Education, Location), overall compatibility score,
@@ -13,17 +22,26 @@ class MatchingEngine:
         self,
         candidate: Dict[str, Any],
         opportunities: List[Dict[str, Any]],
+        skill_proficiency_threshold: float = 0.30,
     ) -> List[Dict[str, Any]]:
         """Ranks list of opportunity dicts against candidate profile."""
-        cand_skills = set(
-            s.lower() for s in candidate.get("skills", [])
+        # Process skills: handle string lists or dict lists, filtering by proficiency threshold
+        cand_skills = set()
+        raw_skills = candidate.get("skills", [])
+        for s in raw_skills:
+            if isinstance(s, dict):
+                if float(s.get("proficiency", 0.0)) >= skill_proficiency_threshold:
+                    cand_skills.add(s.get("normalized_name") or s.get("name", "").strip().lower())
+            elif isinstance(s, str):
+                cand_skills.add(s.strip().lower())
+
+        # Restore protected career gap duration to prevent unfair penalty
+        cand_exp = calculate_effective_experience(
+            candidate.get("experience_years", 0.0),
+            candidate.get("career_gaps", []),
         )
-        cand_exp = candidate.get("experience_years", 0.0)
         cand_edu = [e.lower() for e in candidate.get("education", [])]
         cand_loc = candidate.get("location", "").lower()
-
-        # Ignore protected career gaps in experience calculation (do not deduct)
-        # Career gaps are passed for audit but explicitly protected
 
         ranked = []
         for opp in opportunities:
@@ -46,7 +64,7 @@ class MatchingEngine:
                 matched_count = 0
                 for s in req_skills:
                     if s.lower() in cand_skills:
-                        matched_count += 1
+                        matched_count += 1.0
                         matched_skills.append(s)
                     else:
                         missing_skills.append(s)
@@ -62,7 +80,7 @@ class MatchingEngine:
                 max_score = len(req_skills) + (0.5 * len(pref_skills))
                 skill_score = min(1.0, matched_count / max_score) if max_score > 0 else 1.0
 
-            # 2. Experience Match Calculation
+            # 2. Experience Match Calculation (Using Effective Experience)
             if req_exp <= 0 or cand_exp >= req_exp:
                 exp_score = 1.0
             else:
@@ -106,3 +124,4 @@ class MatchingEngine:
         # Sort by compatibility score descending
         ranked.sort(key=lambda x: x["compatibility_score"], reverse=True)
         return ranked
+

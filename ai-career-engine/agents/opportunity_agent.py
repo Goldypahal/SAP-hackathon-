@@ -50,12 +50,13 @@ class OpportunityAgent(BaseAgent):
             ]
 
         matching_cand_data = {
-            "skills": [s.name for s in candidate.skills],
+            "skills": [s.model_dump() for s in candidate.skills],
             "education": candidate.education,
             "experience_years": candidate.experience_years,
             "location": candidate.location,
             "career_gaps": [g.model_dump() for g in candidate.career_gaps],
         }
+
 
         ranked_opportunities = self.matching_engine.rank(
             candidate=matching_cand_data,
