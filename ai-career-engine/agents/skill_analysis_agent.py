@@ -39,7 +39,9 @@ class SkillAnalysisAgent(BaseAgent):
             candidate_skills=[s.model_dump() for s in processed_cand_skills],
             required_skills=required_skills,
             preferred_skills=preferred_skills,
+            candidate_experience_years=candidate.experience_years,
         )
+
 
         # Categorize strengths (>= 70%) and moderate skills (40-69%)
         strengths = [s.model_dump() for s in processed_cand_skills if s.proficiency >= 0.70]

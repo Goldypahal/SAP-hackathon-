@@ -62,13 +62,15 @@ class TestAICareerEngine(unittest.TestCase):
             {
                 "title": "ML Engineer",
                 "company": "TechCorp",
-                "required_skills": ["Python", "SQL"],
-                "preferred_skills": ["MLOps", "Kubernetes"],
+                "required_skills": ["Python", "SQL", "MLOps", "Kubernetes"],
+                "preferred_skills": [],
                 "experience_required": 2.0,
                 "education_required": "Bachelor",
                 "location": "Remote",
             }
         ]
+
+
         ranked = engine.rank(cand_data, opps)
         matched = ranked[0]["why_matched"]
         gaps = ranked[0]["gaps"]

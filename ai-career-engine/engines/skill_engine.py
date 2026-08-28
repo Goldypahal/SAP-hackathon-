@@ -18,10 +18,14 @@ class SkillEngine:
             "python3": "python",
             "postgres": "postgresql",
             "ml": "machine learning",
+            "machine_learning": "machine learning",
+            "power_bi": "power bi",
+            "spring_boot": "spring boot",
             "k8s": "kubernetes",
             "aws cloud": "aws",
         }
         return aliases.get(name, name)
+
 
     def process_candidate_skills(self, skills: List[Dict[str, Any]]) -> List[Skill]:
         """Normalizes and computes overall proficiency for candidate skills."""

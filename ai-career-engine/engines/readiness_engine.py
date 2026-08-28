@@ -1,10 +1,14 @@
 from __future__ import annotations
 from typing import Dict, List, Any
 from engines.matching_engine import calculate_effective_experience
+from engines.skill_engine import SkillEngine
 
 
 class ReadinessEngine:
     """Deterministic engine to evaluate candidate career readiness score (0-100%)."""
+
+    def __init__(self, skill_engine: SkillEngine = None):
+        self.skill_engine = skill_engine or SkillEngine()
 
     def calculate(
         self,
@@ -12,10 +16,12 @@ class ReadinessEngine:
         target_role: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Calculates readiness score based on skill overlap, project coverage, and effective experience."""
-        cand_skills = {
-            s.get("normalized_name") or s.get("name", "").strip().lower(): float(s.get("proficiency", 0.0))
-            for s in candidate.get("skills", [])
-        }
+        cand_skills = {}
+        for s in candidate.get("skills", []):
+            raw_name = s.get("name", "")
+            norm = s.get("normalized_name") or self.skill_engine.normalize_skill_name(raw_name)
+            norm = self.skill_engine.normalize_skill_name(norm)
+            cand_skills[norm] = float(s.get("proficiency", 0.0))
 
         req_skills = target_role.get("required_skills", [])
         if not req_skills:
@@ -24,9 +30,12 @@ class ReadinessEngine:
             total_req = len(req_skills)
             met_sum = 0.0
             for r in req_skills:
-                r_name = r.get("normalized_name") or r.get("name", "").strip().lower()
+                raw_name = r.get("name", "")
+                r_norm = r.get("normalized_name") or self.skill_engine.normalize_skill_name(raw_name)
+                r_norm = self.skill_engine.normalize_skill_name(r_norm)
+
                 req_level = float(r.get("proficiency", 0.7))
-                curr_level = cand_skills.get(r_name, 0.0)
+                curr_level = cand_skills.get(r_norm, 0.0)
                 if curr_level >= req_level:
                     met_sum += 1.0
                 else:
@@ -35,7 +44,7 @@ class ReadinessEngine:
 
         # Project score (0-1)
         num_projects = len(candidate.get("projects", []))
-        project_score = min(1.0, num_projects * 0.33)
+        project_score = min(1.0, num_projects * 0.40)
 
         # Experience score using effective experience (restoring protected career gaps)
         cand_exp = calculate_effective_experience(
@@ -45,15 +54,25 @@ class ReadinessEngine:
         target_exp = target_role.get("experience_min", 1.0)
         exp_score = 1.0 if cand_exp >= target_exp else (cand_exp / target_exp if target_exp > 0 else 1.0)
 
-        # Protected career gaps are restored so they NEVER reduce readiness
+        # Weighted calculation (Skill 60%, Project 25%, Experience 15%)
         overall_readiness = int(
             round((skill_score * 0.60 + project_score * 0.25 + exp_score * 0.15) * 100)
         )
 
+        # Readiness Category mapping:
+        # >= 70%: Job Ready
+        # >= 35%: Developing
+        # < 35%: Early Preparation
+        if overall_readiness >= 70:
+            status = "Job Ready"
+        elif overall_readiness >= 35:
+            status = "Developing"
+        else:
+            status = "Early Preparation"
 
         return {
             "readiness_score": overall_readiness,
-            "status": "Ready for Applications" if overall_readiness >= 80 else ("Developing" if overall_readiness >= 50 else "Early Preparation"),
+            "status": status,
             "skill_readiness": int(skill_score * 100),
             "project_readiness": int(project_score * 100),
             "experience_readiness": int(exp_score * 100),

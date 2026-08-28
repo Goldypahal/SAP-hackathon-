@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Dict, List, Any
+from engines.skill_engine import SkillEngine
 
 
 def calculate_effective_experience(experience_years: float, career_gaps: List[Dict[str, Any]]) -> float:
@@ -10,7 +11,6 @@ def calculate_effective_experience(experience_years: float, career_gaps: List[Di
     return round(experience_years + (protected_months / 12.0), 2)
 
 
-
 class MatchingEngine:
     """Deterministic engine to match candidate profile against job opportunities.
     Includes sub-scores (Skill, Experience, Education, Location), overall compatibility score,
@@ -18,24 +18,27 @@ class MatchingEngine:
     Career gaps marked as protected NEVER reduce matching or readiness scores.
     """
 
+    def __init__(self, skill_engine: SkillEngine = None):
+        self.skill_engine = skill_engine or SkillEngine()
+
     def rank(
         self,
         candidate: Dict[str, Any],
         opportunities: List[Dict[str, Any]],
         skill_proficiency_threshold: float = 0.30,
+        target_role_name: str = "",
     ) -> List[Dict[str, Any]]:
         """Ranks list of opportunity dicts against candidate profile."""
-        # Process skills: handle string lists or dict lists, filtering by proficiency threshold
         cand_skills = set()
         raw_skills = candidate.get("skills", [])
         for s in raw_skills:
             if isinstance(s, dict):
                 if float(s.get("proficiency", 0.0)) >= skill_proficiency_threshold:
-                    cand_skills.add(s.get("normalized_name") or s.get("name", "").strip().lower())
+                    norm = s.get("normalized_name") or self.skill_engine.normalize_skill_name(s.get("name", ""))
+                    cand_skills.add(self.skill_engine.normalize_skill_name(norm))
             elif isinstance(s, str):
-                cand_skills.add(s.strip().lower())
+                cand_skills.add(self.skill_engine.normalize_skill_name(s))
 
-        # Restore protected career gap duration to prevent unfair penalty
         cand_exp = calculate_effective_experience(
             candidate.get("experience_years", 0.0),
             candidate.get("career_gaps", []),
@@ -49,36 +52,34 @@ class MatchingEngine:
             opp_company = opp.get("company", "Company")
             req_skills = opp.get("required_skills", [])
             pref_skills = opp.get("preferred_skills", [])
-            req_exp = opp.get("experience_required", 0.0)
-            req_edu = opp.get("education_required", "")
+            req_exp = opp.get("experience_min", opp.get("experience_required", 0.0))
+            req_edu = opp.get("education_required", opp.get("education", []))
             opp_loc = opp.get("location", "").lower()
 
             # 1. Skill Match Calculation
-            matched_skills = []
-            missing_skills = []
-
-            all_target_skills = req_skills + pref_skills
-            if not all_target_skills:
+            if not req_skills:
                 skill_score = 1.0
+                matched_skills = []
+                missing_skills = []
             else:
-                matched_count = 0
-                for s in req_skills:
-                    if s.lower() in cand_skills:
-                        matched_count += 1.0
-                        matched_skills.append(s)
-                    else:
-                        missing_skills.append(s)
-                
-                for s in pref_skills:
-                    if s.lower() in cand_skills:
-                        matched_count += 0.5
-                        matched_skills.append(s)
-                    else:
-                        if s not in missing_skills:
-                            missing_skills.append(s)
-                
-                max_score = len(req_skills) + (0.5 * len(pref_skills))
-                skill_score = min(1.0, matched_count / max_score) if max_score > 0 else 1.0
+                req_matched = [s for s in req_skills if self.skill_engine.normalize_skill_name(s) in cand_skills]
+                req_missing = [s for s in req_skills if self.skill_engine.normalize_skill_name(s) not in cand_skills]
+                req_score = len(req_matched) / len(req_skills)
+
+                if req_score == 1.0:
+                    skill_score = 1.0
+                    matched_skills = req_matched + ([s for s in pref_skills if self.skill_engine.normalize_skill_name(s) in cand_skills])
+                elif pref_skills:
+                    pref_matched = [s for s in pref_skills if self.skill_engine.normalize_skill_name(s) in cand_skills]
+                    pref_score = len(pref_matched) / len(pref_skills)
+                    skill_score = (req_score * 0.85) + (pref_score * 0.15)
+                    matched_skills = req_matched + pref_matched
+                else:
+                    skill_score = req_score
+                    matched_skills = req_matched
+
+
+                missing_skills = req_missing
 
             # 2. Experience Match Calculation (Using Effective Experience)
             if req_exp <= 0 or cand_exp >= req_exp:
@@ -90,13 +91,17 @@ class MatchingEngine:
             if not req_edu:
                 edu_score = 1.0
             else:
-                edu_score = 1.0 if any(req_edu.lower() in e for e in cand_edu) else 0.80
+                edu_list = req_edu if isinstance(req_edu, list) else [req_edu]
+                if any(any(req_item.lower() in e for e in cand_edu) for req_item in edu_list):
+                    edu_score = 1.0
+                else:
+                    edu_score = 0.80
 
             # 4. Location Match Calculation
-            if not opp_loc or opp_loc == "remote" or cand_loc == opp_loc:
+            if not opp_loc or "remote" in opp_loc or "hybrid" in opp.get("work_mode", "").lower() or any(c_loc in opp_loc for c_loc in cand_loc.split(",")):
                 loc_score = 1.0
             else:
-                loc_score = 0.75
+                loc_score = 0.85
 
             # Overall Score (Weighted: Skill 50%, Experience 25%, Education 15%, Location 10%)
             overall_score = round(
@@ -106,6 +111,10 @@ class MatchingEngine:
                 (loc_score * 0.10),
                 2,
             )
+
+            # Target role title alignment boost (+0.05) if opportunity matches target role
+            if target_role_name and target_role_name.lower() in opp_title.lower():
+                overall_score = min(1.0, overall_score + 0.05)
 
             ranked.append({
                 "title": opp_title,
@@ -124,4 +133,3 @@ class MatchingEngine:
         # Sort by compatibility score descending
         ranked.sort(key=lambda x: x["compatibility_score"], reverse=True)
         return ranked
-

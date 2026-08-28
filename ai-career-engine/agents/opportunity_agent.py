@@ -58,10 +58,15 @@ class OpportunityAgent(BaseAgent):
         }
 
 
+        target_dict = context.get("target_role", {})
+        target_role_name = target_dict.get("name", "") if isinstance(target_dict, dict) else (target_dict.name if hasattr(target_dict, "name") else "")
+
         ranked_opportunities = self.matching_engine.rank(
             candidate=matching_cand_data,
             opportunities=opportunities,
+            target_role_name=target_role_name,
         )
+
 
         return AgentResult(
             agent=self.name,
