@@ -30,7 +30,8 @@ class Settings:
     # Primary AI / LLM Provider Configuration
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini")
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "meta/llama-3.2-11b-vision-instruct")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "nvidia/nemotron-3-ultra-550b-a55b")
+
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-004")
 
     # Optional NVIDIA Nemotron Provider

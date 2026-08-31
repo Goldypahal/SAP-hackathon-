@@ -126,9 +126,11 @@ class LLMProvider:
         url = f"{base_url}/chat/completions" if not base_url.endswith("/chat/completions") else base_url
         candidate_models = [
             self.model_name,
+            "nvidia/nemotron-3-ultra-550b-a55b",
+            "nvidia/nemotron-3-nano-30b-a3b",
             "meta/llama-3.2-11b-vision-instruct",
-            "nvidia/nemotron-4-340b-instruct",
         ]
+
 
 
         messages = [
