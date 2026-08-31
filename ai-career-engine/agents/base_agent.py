@@ -2,7 +2,8 @@ from __future__ import annotations
 import logging
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+from llm.provider import LLMProvider
 from models.schemas import AgentResult
 
 # Configure logging for agents
@@ -10,12 +11,13 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(na
 
 
 class BaseAgent(ABC):
-    """Abstract Base Agent providing standardized execution context, timing, logging, and error handling."""
+    """Abstract Base Agent providing standardized execution context, timing, logging, LLM provider access, and error handling."""
 
-    def __init__(self, name: str, version: str = "1.0.0"):
+    def __init__(self, name: str, version: str = "1.0.0", llm_provider: Optional[LLMProvider] = None):
         self.name = name
         self.version = version
         self.logger = logging.getLogger(f"agent.{name}")
+        self.llm = llm_provider or LLMProvider()
 
     def execute(self, context: Dict[str, Any]) -> AgentResult:
         """Executes the agent lifecycle with context validation, timing, and error safety."""

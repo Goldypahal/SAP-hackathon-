@@ -22,6 +22,17 @@ class IndustryIntelligenceAgent(BaseAgent):
             for skill in emerging
         ]
 
+        # Generate LLM Industry Market Trend Intelligence Synthesis
+        prompt = (
+            f"Synthesize current market technology trends. "
+            f"Emerging in-demand skills: {', '.join(emerging) if emerging else 'Standard data stack'}. "
+            f"Summarize the industry shift and why these tools are vital in 2 sentences."
+        )
+        explanation = self.llm.generate_explanation(
+            prompt=prompt,
+            system_instruction="You are an Industry Market & Technology Trend Analyst."
+        )
+
         return AgentResult(
             agent=self.name,
             status="success",
@@ -30,5 +41,7 @@ class IndustryIntelligenceAgent(BaseAgent):
                 "skill_trends": trends,
                 "emerging_skills": emerging,
                 "insights": insights,
+                "explanation": explanation,
             },
         )
+

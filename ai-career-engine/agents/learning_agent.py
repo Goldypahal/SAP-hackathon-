@@ -49,6 +49,18 @@ class LearningAgent(BaseAgent):
             {"title": "AWS Certified Machine Learning - Specialty", "target_skill": "MLOps", "level": "Advanced"},
         ]
 
+        # Generate LLM Learning Plan Sequencing Explanation
+        top_skills = [lp["skill"] for lp in learning_plan[:3]]
+        prompt = (
+            f"Explain the learning path sequence for acquiring skills: {', '.join(top_skills)}. "
+            f"Why is taking foundational prerequisite courses before advanced specialization critical for career transition success? "
+            f"Provide a 2-sentence explanation."
+        )
+        explanation = self.llm.generate_explanation(
+            prompt=prompt,
+            system_instruction="You are an Expert Technical Curriculum & Learning Strategist."
+        )
+
         return AgentResult(
             agent=self.name,
             status="success",
@@ -57,5 +69,7 @@ class LearningAgent(BaseAgent):
                 "learning_plan": learning_plan,
                 "recommended_courses": rec_courses,
                 "certifications": certifications,
+                "explanation": explanation,
             },
         )
+

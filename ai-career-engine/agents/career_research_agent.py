@@ -42,6 +42,17 @@ class CareerResearchAgent(BaseAgent):
             }
         ]
 
+        # Generate LLM Career Path Research & Transition Strategy
+        prompt = (
+            f"Evaluate transition feasibility from current role '{current_role}' to target role '{target_role}'. "
+            f"Alternative transition roles: {', '.join([a['role'] for a in alternatives])}. "
+            f"Provide a 2-sentence summary outlining transition ease and key domain positioning."
+        )
+        explanation = self.llm.generate_explanation(
+            prompt=prompt,
+            system_instruction="You are a Career Transition Research Advisor."
+        )
+
         return AgentResult(
             agent=self.name,
             status="success",
@@ -52,6 +63,8 @@ class CareerResearchAgent(BaseAgent):
                 "career_paths": career_paths,
                 "market_demand": market_stats,
                 "alternatives": alternatives,
+                "explanation": explanation,
             },
             evidence=evidence,
         )
+

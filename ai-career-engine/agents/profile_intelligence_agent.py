@@ -42,6 +42,17 @@ class ProfileIntelligenceAgent(BaseAgent):
             target_role=target_role.name,
         )
 
+        # Generate LLM Career Readiness Coaching Summary
+        prompt = (
+            f"Evaluate candidate overall career readiness score: {readiness_data.get('readiness_score', 0)}% ({readiness_data.get('status', 'In Progress')}). "
+            f"Skill Readiness: {readiness_data.get('skill_readiness', 0)}%, Project Readiness: {readiness_data.get('project_readiness', 0)}%. "
+            f"Provide a 2-sentence motivational career coaching guidance note on achieving full interview readiness."
+        )
+        explanation = self.llm.generate_explanation(
+            prompt=prompt,
+            system_instruction="You are a Senior Executive Career Readiness Coach."
+        )
+
         return AgentResult(
             agent=self.name,
             status="success",
@@ -51,5 +62,7 @@ class ProfileIntelligenceAgent(BaseAgent):
                 "roadmap": roadmap,
                 "project_count": len(candidate.projects),
                 "completed_courses_count": len(candidate.courses_completed),
+                "explanation": explanation,
             },
         )
+

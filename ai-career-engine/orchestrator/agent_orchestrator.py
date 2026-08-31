@@ -70,6 +70,7 @@ class AgentOrchestrator:
             "candidate_id": context.get("candidate", {}).get("candidate_id", "unknown"),
             "target_role": context.get("target_role", {}).get("name", "Target Role"),
             "agent_summaries": {name: res.summary for name, res in agent_results.items()},
+            "agent_explanations": {name: res.data.get("explanation", "") for name, res in agent_results.items() if res.data and "explanation" in res.data},
             "strengths": context.get("strengths", []),
             "skill_gaps": context.get("skill_gaps", []),
             "career_paths": career_res.data.get("career_paths", []),

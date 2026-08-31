@@ -67,6 +67,19 @@ class OpportunityAgent(BaseAgent):
             target_role_name=target_role_name,
         )
 
+        # Generate LLM Match Criteria Explanation for Top Matching Opportunity
+        top_job = ranked_opportunities[0] if ranked_opportunities else {}
+        prompt = (
+            f"Explain job match compatibility for top opportunity '{top_job.get('title', 'Target Job')}' at '{top_job.get('company', 'Company')}'. "
+            f"Overall Compatibility Score: {top_job.get('compatibility_score', 0)}%. "
+            f"Key matching highlights: {', '.join(top_job.get('why_matched', []))}. "
+            f"Identified gaps: {', '.join(top_job.get('gaps', []))}. "
+            f"Provide a 2-sentence rationale for candidate application strategic positioning."
+        )
+        explanation = self.llm.generate_explanation(
+            prompt=prompt,
+            system_instruction="You are an AI Recruitment & Candidate Matching Strategist."
+        )
 
         return AgentResult(
             agent=self.name,
@@ -74,5 +87,7 @@ class OpportunityAgent(BaseAgent):
             summary=f"Ranked {len(ranked_opportunities)} matching opportunities based on candidate skills, experience, and education.",
             data={
                 "matched_opportunities": ranked_opportunities,
+                "explanation": explanation,
             },
         )
+
