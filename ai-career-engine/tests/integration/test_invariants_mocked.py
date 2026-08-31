@@ -2,16 +2,17 @@ from __future__ import annotations
 import json
 import os
 import unittest
+from unittest.mock import patch
 from orchestrator import AgentOrchestrator
 
 
-class TestIntegrationInvariants(unittest.TestCase):
-    """Integration test suite executing every candidate against every target role to verify system invariants."""
+class TestIntegrationInvariantsMocked(unittest.TestCase):
+    """Integration test suite executing every candidate against every target role with mocked LLM provider."""
 
     @classmethod
     def setUpClass(cls):
         cls.data_dir = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "data"
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data"
         )
         with open(os.path.join(cls.data_dir, "candidates.json"), "r", encoding="utf-8") as f:
             cls.candidates = json.load(f)
@@ -26,7 +27,9 @@ class TestIntegrationInvariants(unittest.TestCase):
 
         cls.orchestrator = AgentOrchestrator()
 
-    def test_all_candidates_x_roles_invariants(self):
+    @patch("llm.provider.LLMProvider.generate_explanation")
+    def test_all_candidates_x_roles_invariants(self, mock_llm):
+        mock_llm.return_value = "[Mocked Pipeline Explanation]"
         for candidate in self.candidates:
             for role in self.target_roles:
                 ctx = {

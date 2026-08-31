@@ -10,7 +10,7 @@ class TestDataContracts(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.data_dir = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "data"
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data"
         )
 
     def _load_data_file(self, filename: str):

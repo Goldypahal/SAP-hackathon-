@@ -33,10 +33,19 @@ def load_json(filepath: str) -> Any:
         return json.load(f)
 
 
+from unittest.mock import patch
+
+
 def main():
+    with patch("llm.provider.LLMProvider.generate_explanation", return_value="[Benchmark LLM Explanation]"):
+        _run_evaluation()
+
+
+def _run_evaluation():
     print("==================================================")
     print("[*] AI CAREER ENGINE - SYSTEM EVALUATION & BENCHMARK")
     print("==================================================")
+
 
 
     data_dir = os.path.join(PROJECT_ROOT, "data")

@@ -2,17 +2,19 @@ from __future__ import annotations
 import json
 import os
 import unittest
+from unittest.mock import patch
 
 from engines import ReadinessEngine, MatchingEngine
 from orchestrator import AgentOrchestrator
 
 
-class TestEvaluationScenarios(unittest.TestCase):
+class TestEvaluationScenariosMocked(unittest.TestCase):
+    """Integration test suite executing all scenarios (S001-S007) with mocked LLM provider for sub-second, deterministic execution."""
 
     @classmethod
     def setUpClass(cls):
         cls.data_dir = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "data"
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data"
         )
         with open(os.path.join(cls.data_dir, "candidates.json"), "r", encoding="utf-8") as f:
             cls.candidates = {c["candidate_id"]: c for c in json.load(f)}
@@ -27,7 +29,9 @@ class TestEvaluationScenarios(unittest.TestCase):
 
         cls.orchestrator = AgentOrchestrator()
 
-    def test_scenario_S001_protected_gap(self):
+    @patch("llm.provider.LLMProvider.generate_explanation")
+    def test_scenario_S001_protected_gap(self, mock_llm):
+        mock_llm.return_value = "[Mocked LLM Explanation]"
         cand = self.candidates["C001"]
         role = self.target_roles["R001"]
         ctx = {"candidate": cand, "target_role": role, "courses": self.courses, "opportunities": self.opportunities, "jobs": self.jobs}
@@ -37,14 +41,18 @@ class TestEvaluationScenarios(unittest.TestCase):
         self.assertIn("docker", high_gaps)
         self.assertIn("kubernetes", high_gaps)
 
-    def test_scenario_S002_beginner_ml(self):
+    @patch("llm.provider.LLMProvider.generate_explanation")
+    def test_scenario_S002_beginner_ml(self, mock_llm):
+        mock_llm.return_value = "[Mocked LLM Explanation]"
         cand = self.candidates["C002"]
         role = self.target_roles["R001"]
         ctx = {"candidate": cand, "target_role": role, "courses": self.courses, "opportunities": self.opportunities, "jobs": self.jobs}
         res = self.orchestrator.run_career_pipeline(ctx)
         self.assertIn("developing", res["readiness"]["status"].lower())
 
-    def test_scenario_S003_strong_ml(self):
+    @patch("llm.provider.LLMProvider.generate_explanation")
+    def test_scenario_S003_strong_ml(self, mock_llm):
+        mock_llm.return_value = "[Mocked LLM Explanation]"
         cand = self.candidates["C003"]
         role = self.target_roles["R001"]
         ctx = {"candidate": cand, "target_role": role, "courses": self.courses, "opportunities": self.opportunities, "jobs": self.jobs}
@@ -53,7 +61,9 @@ class TestEvaluationScenarios(unittest.TestCase):
         self.assertEqual(len(high_gaps), 0)
         self.assertIn("job ready", res["readiness"]["status"].lower())
 
-    def test_scenario_S004_career_switcher(self):
+    @patch("llm.provider.LLMProvider.generate_explanation")
+    def test_scenario_S004_career_switcher(self, mock_llm):
+        mock_llm.return_value = "[Mocked LLM Explanation]"
         cand = self.candidates["C004"]
         role = self.target_roles["R002"]
         ctx = {"candidate": cand, "target_role": role, "courses": self.courses, "opportunities": self.opportunities, "jobs": self.jobs}
@@ -61,7 +71,9 @@ class TestEvaluationScenarios(unittest.TestCase):
         top_opp = res["matched_opportunities"][0]["title"]
         self.assertIn("Data Analyst", top_opp)
 
-    def test_scenario_S005_backend_specialist(self):
+    @patch("llm.provider.LLMProvider.generate_explanation")
+    def test_scenario_S005_backend_specialist(self, mock_llm):
+        mock_llm.return_value = "[Mocked LLM Explanation]"
         cand = self.candidates["C005"]
         role = self.target_roles["R003"]
         ctx = {"candidate": cand, "target_role": role, "courses": self.courses, "opportunities": self.opportunities, "jobs": self.jobs}
@@ -96,7 +108,6 @@ class TestEvaluationScenarios(unittest.TestCase):
         # Candidate C (protected: False) does NOT receive restored experience
         self.assertLessEqual(read_C, read_A)
         self.assertLessEqual(opp_C, opp_A)
-
 
 
 if __name__ == "__main__":

@@ -1,35 +1,71 @@
-# AI Career Engine - Test Suite Architecture & Coverage
+# AI Career Engine - 3-Layer Test Suite Architecture
 
-This directory contains the automated test suite for the AI Career Engine platform.
+This directory contains the automated test suite refactored into a **3-Layer Architecture** for sub-second deterministic execution, zero API quota consumption, and clean resource management.
 
 ---
 
-## 📁 Directory Layout & Test Suites
+## 🏗️ 3-Layer Test Architecture
 
-- **`test_agents.py`**: Unit tests verifying individual agent lifecycle execution, context validation, and error safety.
-- **`test_llm.py`**: Integration tests verifying `LLMProvider` REST dispatch (Gemini, OpenAI, NVIDIA Nemotron), fallback behavior, and agent narrative explanations.
-- **`test_scenarios.py`**: Scenario evaluation tests (S001 - S007) matching real-world candidate archetypes and SRS requirements.
-- **`test_regression_edge_cases.py`**: Regression edge-case tests covering protected career gap rules (`protected: true` vs `protected: false` vs missing flag), proficiency score clamping (`0.0 - 1.0`), duplicate skills, and ranking invariants.
-- **`test_data_contracts.py`**: Data contract validation tests verifying candidate IDs, target role IDs, proficiency ranges, and JSON data schemas.
-- **`test_integration_invariants.py`**: Full matrix integration tests running every candidate against every target role to assert state structure, readiness score bounds `[0, 100]`, and opportunity ranking order invariants.
+```
+                 ┌─────────────────────┐
+                 │   UNIT TESTS        │  tests/unit/
+                 │ Zero network calls  │  Sub-second execution
+                 │ Deterministic       │
+                 └──────────┬──────────┘
+                            │
+                 ┌──────────▼──────────┐
+                 │ INTEGRATION TESTS   │  tests/integration/
+                 │ Mocked LLM Provider │  Deterministic scenarios
+                 │ Zero network calls  │  & Data contracts
+                 └──────────┬──────────┘
+                            │
+                 ┌──────────▼──────────┐
+                 │ LIVE E2E TESTS      │  tests/live/
+                 │ Real NVIDIA NIM API │  On-demand execution
+                 │ API key required    │
+                 └─────────────────────┘
+```
+
+---
+
+## 📁 Directory Layout
+
+### 1. Unit Tests (`tests/unit/`)
+Pure deterministic engine logic tests running in milliseconds without network or API dependencies:
+- **`test_matching_engine.py`**: Unit tests for continuous skill matching, location/education scoring, and protected gap rules.
+- **`test_skill_gap_engine.py`**: Unit tests for skill gap detection and priority boundaries.
+- **`test_readiness_engine.py`**: Unit tests for readiness scoring and project coverage.
+
+### 2. Integration Tests (`tests/integration/`)
+Scenario evaluation and candidate matrix tests using **Mocked LLMs** (`@patch`) for fast, deterministic pipeline validation:
+- **`test_scenarios_mocked.py`**: Runs SRS evaluation scenarios S001-S007 in < 1 second.
+- **`test_invariants_mocked.py`**: Runs full candidate $\times$ role matrix tests in < 1 second.
+- **`test_data_contracts.py`**: Dataset schema and ID contract tests.
+
+### 3. Live E2E Tests (`tests/live/`)
+Live API tests calling real LLM endpoints (NVIDIA Nemotron 3 Ultra):
+- **`test_nvidia_llm_live.py`**: Real live API completion tests.
 
 ---
 
 ## 🚀 Running the Tests
 
-### Run All Unit & Integration Tests
+### Run Unit Tests (Fast, Milliseconds)
 ```bash
-python -m unittest discover -s tests
+python -m unittest discover -s tests/unit -v
 ```
 
-### Run Specific Test Suite
+### Run Integration Tests (Fast, Mocked LLM)
 ```bash
-python -m unittest tests/test_regression_edge_cases.py
-python -m unittest tests/test_data_contracts.py
-python -m unittest tests/test_integration_invariants.py
+python -m unittest discover -s tests/integration -v
 ```
 
-### Run Benchmark Evaluation
+### Run Unit + Integration Tests Together (Standard CI/CD)
 ```bash
-python evaluate.py
+python -m unittest discover -s tests/unit && python -m unittest discover -s tests/integration
+```
+
+### Run Live E2E Tests (On-Demand, Real NVIDIA API)
+```bash
+python -m unittest discover -s tests/live -v
 ```

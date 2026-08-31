@@ -64,13 +64,16 @@ class LLMProvider:
                 headers={"Content-Type": "application/json"},
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            resp = urllib.request.urlopen(req, timeout=15)
+            try:
                 data = json.loads(resp.read().decode("utf-8"))
                 candidates = data.get("candidates", [])
                 if candidates:
                     parts = candidates[0].get("content", {}).get("parts", [])
                     if parts:
                         return parts[0].get("text", "").strip()
+            finally:
+                resp.close()
             return f"[Gemini API returned empty response for: '{prompt[:60]}...']"
         except Exception as e:
             logger.warning(f"Gemini API call failed ({e}). Falling back to simulation response.")
@@ -106,11 +109,14 @@ class LLMProvider:
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            resp = urllib.request.urlopen(req, timeout=15)
+            try:
                 data = json.loads(resp.read().decode("utf-8"))
                 choices = data.get("choices", [])
                 if choices:
                     return choices[0].get("message", {}).get("content", "").strip()
+            finally:
+                resp.close()
             return f"[OpenAI API returned empty response]"
         except Exception as e:
             logger.warning(f"OpenAI API call failed ({e}). Falling back to simulation response.")
@@ -130,8 +136,6 @@ class LLMProvider:
             "nvidia/nemotron-3-nano-30b-a3b",
             "meta/llama-3.2-11b-vision-instruct",
         ]
-
-
 
         messages = [
             {"role": "system", "content": system_instruction or "You are an AI Career Engine Assistant."},
@@ -156,16 +160,20 @@ class LLMProvider:
                     },
                     method="POST",
                 )
-                with urllib.request.urlopen(req, timeout=45) as resp:
+                resp = urllib.request.urlopen(req, timeout=45)
+                try:
                     data = json.loads(resp.read().decode("utf-8"))
                     choices = data.get("choices", [])
                     if choices:
                         content = choices[0].get("message", {}).get("content", "").strip()
                         if content:
                             return content
+                finally:
+                    resp.close()
             except Exception as e:
                 last_err = e
                 logger.warning(f"NVIDIA model '{model}' call failed: {e}. Trying fallback...")
+
 
 
         logger.warning(f"NVIDIA API call failed ({last_err}). Falling back to simulation response.")
