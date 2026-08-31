@@ -26,7 +26,7 @@ class SkillGapEngine:
             raw_name = s.get("name", "")
             norm_name = s.get("normalized_name") or self.skill_engine.normalize_skill_name(raw_name)
             norm_name = self.skill_engine.normalize_skill_name(norm_name)
-            prof = float(s.get("proficiency", 0.0))
+            prof = min(1.0, max(0.0, float(s.get("proficiency", 0.0))))
             cand_map[norm_name] = prof
 
         gaps: List[SkillGap] = []
@@ -40,7 +40,7 @@ class SkillGapEngine:
             r_norm = r_skill.get("normalized_name") or self.skill_engine.normalize_skill_name(raw_name)
             r_norm = self.skill_engine.normalize_skill_name(r_norm)
             
-            req_level = float(r_skill.get("proficiency", 0.7))
+            req_level = min(1.0, max(0.0, float(r_skill.get("proficiency", 0.7))))
             curr_level = cand_map.get(r_norm, 0.0)
             
             if curr_level < req_level:
@@ -77,8 +77,9 @@ class SkillGapEngine:
             p_norm = p_skill.get("normalized_name") or self.skill_engine.normalize_skill_name(raw_name)
             p_norm = self.skill_engine.normalize_skill_name(p_norm)
 
-            req_level = float(p_skill.get("proficiency", 0.5))
+            req_level = min(1.0, max(0.0, float(p_skill.get("proficiency", 0.5))))
             curr_level = cand_map.get(p_norm, 0.0)
+
 
             if curr_level < req_level and not any(self.skill_engine.normalize_skill_name(g.skill) == p_norm for g in gaps):
                 gap_val = round(req_level - curr_level, 2)

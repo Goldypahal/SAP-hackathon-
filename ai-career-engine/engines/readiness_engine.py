@@ -21,7 +21,7 @@ class ReadinessEngine:
             raw_name = s.get("name", "")
             norm = s.get("normalized_name") or self.skill_engine.normalize_skill_name(raw_name)
             norm = self.skill_engine.normalize_skill_name(norm)
-            cand_skills[norm] = float(s.get("proficiency", 0.0))
+            cand_skills[norm] = min(1.0, max(0.0, float(s.get("proficiency", 0.0))))
 
         req_skills = target_role.get("required_skills", [])
         if not req_skills:
@@ -34,13 +34,14 @@ class ReadinessEngine:
                 r_norm = r.get("normalized_name") or self.skill_engine.normalize_skill_name(raw_name)
                 r_norm = self.skill_engine.normalize_skill_name(r_norm)
 
-                req_level = float(r.get("proficiency", 0.7))
+                req_level = min(1.0, max(0.0, float(r.get("proficiency", 0.7))))
                 curr_level = cand_skills.get(r_norm, 0.0)
                 if curr_level >= req_level:
                     met_sum += 1.0
                 else:
                     met_sum += (curr_level / req_level) if req_level > 0 else 0.0
-            skill_score = met_sum / total_req
+            skill_score = min(1.0, max(0.0, met_sum / total_req))
+
 
         # Project score (0-1)
         num_projects = len(candidate.get("projects", []))

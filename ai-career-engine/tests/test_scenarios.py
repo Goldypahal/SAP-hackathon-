@@ -71,9 +71,11 @@ class TestEvaluationScenarios(unittest.TestCase):
         self.assertIn("job ready", res["readiness"]["status"].lower())
 
     def test_scenario_S006_fairness_parity(self):
-        cand_A = dict(self.candidates["C001"])
+        cand_A = dict(self.candidates["C001"]) # protected: True gap
         cand_B = dict(self.candidates["C001"])
-        cand_B["career_gaps"] = []
+        cand_B["career_gaps"] = [] # no gap
+        cand_C = dict(self.candidates["C001"])
+        cand_C["career_gaps"] = [{"duration_months": 13, "reason": "General Gap", "protected": False}]
 
         role = self.target_roles["R001"]
         readiness_engine = ReadinessEngine()
@@ -81,12 +83,20 @@ class TestEvaluationScenarios(unittest.TestCase):
 
         read_A = readiness_engine.calculate(cand_A, role)["readiness_score"]
         read_B = readiness_engine.calculate(cand_B, role)["readiness_score"]
+        read_C = readiness_engine.calculate(cand_C, role)["readiness_score"]
 
         opp_A = matching_engine.rank(cand_A, self.opportunities)[0]["compatibility_score"]
         opp_B = matching_engine.rank(cand_B, self.opportunities)[0]["compatibility_score"]
+        opp_C = matching_engine.rank(cand_C, self.opportunities)[0]["compatibility_score"]
 
+        # Candidate A (protected: True) receives full parity with Candidate B (no gap)
         self.assertEqual(read_A, read_B)
         self.assertEqual(opp_A, opp_B)
+
+        # Candidate C (protected: False) does NOT receive restored experience
+        self.assertLessEqual(read_C, read_A)
+        self.assertLessEqual(opp_C, opp_A)
+
 
 
 if __name__ == "__main__":
