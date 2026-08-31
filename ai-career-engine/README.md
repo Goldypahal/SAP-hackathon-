@@ -43,7 +43,33 @@ Agents decide what intelligence to request and format explanations, while **dete
 
 ---
 
+## 🔑 API Key & Environment Setup
+
+The system works both with live LLMs (NVIDIA Nemotron 3 Ultra, Google Gemini, OpenAI) and in **Zero-Dependency Simulation Mode** if no key is set.
+
+### Local Setup (Recommended):
+1. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Open `.env` and paste your NVIDIA API Key:
+   ```ini
+   LLM_PROVIDER=nemotron
+   NVIDIA_API_KEY=nvapi-your-key-here
+   LLM_MODEL=nvidia/nemotron-3-ultra-550b-a55b
+   ```
+
+### Command Line / Deployment Setup:
+You can also export your key directly in terminal before running:
+```bash
+export NVIDIA_API_KEY="nvapi-your-key-here"
+python demo.py
+```
+
+---
+
 ## 🚀 Running the Engine
+
 
 ### Run Demo CLI
 ```bash
