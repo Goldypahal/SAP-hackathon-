@@ -1,8 +1,13 @@
 from __future__ import annotations
+import os
 import unittest
 from llm.provider import LLMProvider
 
 
+@unittest.skipUnless(
+    os.getenv("NVIDIA_API_KEY"),
+    "NVIDIA_API_KEY not configured. Skipping live network tests."
+)
 class TestNvidiaLLMLive(unittest.TestCase):
     """Live E2E test suite calling real NVIDIA Nemotron API endpoints on demand."""
 
@@ -19,3 +24,4 @@ class TestNvidiaLLMLive(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
